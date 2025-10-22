@@ -1,0 +1,60 @@
+# render.yaml
+
+# Define a infraestrutura do seu projeto no Render
+services:
+  # -----------------------------------------------------
+  # 1. Serviço de Banco de Dados (PostgreSQL)
+  # -----------------------------------------------------
+  - type: pserv
+    name: solconect-db
+    env: postgres
+    plan: free # Plano gratuito para começar
+    # Definições de volume (opcional, mas recomendado para persistência)
+    disk:
+      name: solconect-db-data
+      sizeGB: 1
+
+  # -----------------------------------------------------
+  # 2. Serviço Web (Dashboard Flask)
+  # -----------------------------------------------------
+  - type: web
+    name: solconect-dashboard
+    env: python
+    region: oregon # Escolha a região mais próxima do seu público
+    
+    # Comandos de build e start
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "gunicorn --bind 0.0.0.0:$PORT src.main:app"
+    
+    # Configurações de saúde e deploy
+    healthCheckPath: /health
+    autoDeploy: true # Implanta automaticamente a cada push no GitHub
+
+    # Variáveis de Ambiente
+    envVars:
+      # Variável para o banco de dados, pega a string de conexão do serviço 'solconect-db'
+      - key: DATABASE_URL
+        fromDatabase:
+          name: solconect-db
+          property: connectionString
+          
+      # Variável de segurança (MUDAR O VALOR NO PAINEL DO RENDER!)
+      - key: SECRET_KEY
+        value: "sua_chave_secreta_super_forte_aqui_mude_isso"
+        
+      # Variável para o modo de produção
+      - key: FLASK_ENV
+        value: production
+        
+      # Variáveis para o backup AWS S3 (Comentadas, mas prontas para uso)
+      # - key: AWS_S3_ENABLED
+      #   value: "true"
+      # - key: AWS_ACCESS_KEY_ID
+      #   value: "AKIAR5JYGTQLHFIRPX2"
+      # - key: AWS_SECRET_ACCESS_KEY
+      #   value: "sua_chave_secreta_aws_completa"
+      # - key: AWS_S3_BUCKET_NAME
+      #   value: "solconect-dashboard-exports-2024"
+      # - key: AWS_S3_REGION
+      #   value: "us-east-1"
+
